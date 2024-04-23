@@ -1,0 +1,173 @@
+﻿CREATE TABLE Guests (
+    GuestID INT AUTO_INCREMENT PRIMARY KEY,
+    FirstName VARCHAR(50) NOT NULL,
+    LastName VARCHAR(50) NOT NULL,
+    Email VARCHAR(100),
+    PhoneNumber VARCHAR(15)
+);
+
+
+
+
+CREATE TABLE Rooms (
+    RoomNumber INT AUTO_INCREMENT PRIMARY KEY,
+    RoomType VARCHAR(50) NOT NULL,
+    BedType VARCHAR(50),
+    Rate DECIMAL(10, 2) NOT NULL
+);
+
+
+
+
+CREATE TABLE Reservations (
+    ReservationID INT AUTO_INCREMENT PRIMARY KEY,
+    GuestID INT,
+    RoomNumber INT,
+    CheckInDate DATE,
+    CheckOutDate DATE,
+    TotalAmount DECIMAL(10, 2),
+    FOREIGN KEY (GuestID) REFERENCES Guests(GuestID),
+    FOREIGN KEY (RoomNumber) REFERENCES Rooms(RoomNumber)
+);
+
+
+
+
+CREATE TABLE FoodOrders (
+    OrderID INT AUTO_INCREMENT PRIMARY KEY,
+    GuestID INT,
+    OrderDate DATE,
+    TotalAmount DECIMAL(10, 2),
+    FOREIGN KEY (GuestID) REFERENCES Guests(GuestID)
+);
+
+
+
+
+-- Insert sample guests
+INSERT INTO Guests (FirstName, LastName, Email, PhoneNumber) VALUES 
+('John', 'Doe', 'john.doe@gmail.com', '123-456-7890'),
+('Jane', 'Smith', 'jane.smith@example.com', '987-654-3210'),
+('Alice', 'Johnson', 'alice.johnson@example.com', '456-789-0123'),
+('Bob', 'Williams', 'bob.williams@example.com', '789-012-3456'),
+('Emily', 'Brown', 'emily.brown@example.com', '012-345-6789');
+
+
+-- Insert sample rooms
+INSERT INTO Rooms (RoomType, BedType, Rate) VALUES
+('Single', 'Queen', 100.00),
+('Double', 'King', 150.00),
+('Suite', 'King', 250.00),
+('Single', 'Twin', 90.00),
+('Double', 'Queen', 160.00);
+
+
+-- Insert sample reservations
+INSERT INTO Reservations (GuestID, RoomNumber, CheckInDate, CheckOutDate, TotalAmount) VALUES
+(1, 1, '2024-04-01', '2024-04-05', 400.00),
+(2, 3, '2024-04-03', '2024-04-07', 1000.00),
+(3, 2, '2024-04-02', '2024-04-06', 600.00),
+(4, 4, '2024-04-04', '2024-04-08', 400.00),
+(5, 5, '2024-04-05', '2024-04-09', 640.00);
+
+
+-- Insert sample food orders
+INSERT INTO FoodOrders (GuestID, OrderDate, TotalAmount) VALUES
+(1, '2024-04-01', 80.00),
+(2, '2024-04-03', 120.00),
+(3, '2024-04-02', 90.00),
+(4, '2024-04-04', 110.00),
+(5, '2024-04-05', 95.00);
+
+
+
+
+SELECT RoomNumber, RoomType
+FROM Rooms
+WHERE RoomNumber IN (
+    SELECT RoomNumber
+    FROM Reservations
+    WHERE GuestID=1
+);
+
+
+SELECT RoomType, COUNT(*) AS TotalRooms
+FROM Rooms
+GROUP BY RoomType;
+
+
+ALTER TABLE rooms
+ADD Availability bool;
+
+
+UPDATE rooms
+SET Availability= True
+WHERE RoomNumber=1;
+
+
+UPDATE rooms
+SET Availability= False
+WHERE RoomNumber=2;
+UPDATE rooms
+SET Availability= True
+WHERE RoomNumber=3;
+
+
+UPDATE rooms
+SET Availability= False
+WHERE RoomNumber=4;
+
+
+UPDATE rooms
+SET Availability= False
+WHERE RoomNumber=5;
+
+
+-- To read all columns for all guests
+SELECT * FROM Guests;
+
+
+SELECT FirstName, LastName FROM Guests;
+
+
+SELECT FirstName, LastName, Email, PhoneNumber FROM Guests WHERE GuestID = 1;
+
+
+UPDATE Guests SET Email = 'doe.john@hotmail.com' WHERE GuestID = 1;
+
+
+UPDATE Guests SET PhoneNumber = '981-88-7207' WHERE GuestID = 2;
+
+
+SELECT r.RoomNumber, r.RoomType
+FROM Rooms r
+LEFT JOIN Reservations rs ON r.RoomNumber = rs.RoomNumber
+WHERE r.Availability IS True;
+
+
+SELECT 
+    rs.GuestID,
+    DATEDIFF(rs.CheckOutDate, rs.CheckInDate) AS StayDuration,
+    CASE 
+        WHEN DATEDIFF(rs.CheckOutDate, rs.CheckInDate) >= 3 THEN rs.TotalAmount * 0.9
+        ELSE rs.TotalAmount 
+    END AS FinalAmount
+FROM Reservations rs;
+
+
+SELECT 
+    fo.GuestID,
+    SUM(fo.TotalAmount) AS TotalFoodAmount,
+    CASE 
+        WHEN SUM(fo.TotalAmount) > 1000 THEN SUM(fo.TotalAmount) * 0.95
+        ELSE SUM(fo.TotalAmount) 
+    END AS FinalFoodAmount
+FROM FoodOrders fo
+GROUP BY fo.GuestID;
+
+
+SELECT g.FirstName, g.LastName, SUM(fo.TotalAmount) + SUM(rs.TotalAmount) AS FinalAmount
+FROM Guests g
+INNER JOIN FoodOrders fo ON g.GuestID = fo.GuestID
+INNER JOIN reservations rs ON g.GuestID = rs.GuestID
+GROUP BY g.GuestID;
